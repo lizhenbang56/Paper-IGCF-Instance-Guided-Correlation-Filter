@@ -8,6 +8,8 @@
 \usepackage{algpseudocode}
 \usepackage{enumitem}
 \usepackage{balance}
+\usepackage{subfig}
+\usepackage{color}
 \def\algbackskip{\hskip\dimexpr-\algorithmicindent+\labelsep}
 \def\LState{\State \algbackskip}
 
@@ -21,6 +23,9 @@
 \usepackage{ulem}
 
 \journal{Journal of \LaTeX\ Templates}
+
+\newcommand{\replace}[1]{$\langle$\textit{#1}$\rangle$}
+\newcommand{\HL}[1]{\textcolor[rgb]{1.00,0.00,0.00}{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %% Elsevier bibliography styles
@@ -78,7 +83,7 @@
 \address[mysecondaryaddress]{360 Park Avenue South, New York}
 
 \begin{abstract}
-Traditional correlation filter (CF) based trackers typically rely only on ridge regression for online learning without the perception of instance level information of objects, which may lead to drift and failure of CF trackers. In this paper, we propose the Instance Guided Correlation Filter (IGCF) to improve the tracking robustness. Specifically, a deep network called InstMask is designed to generate the instance mask of objects, which are used to explicitly constraint the learning process of correlation filters. Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. Extensive experiments on several challenging benchmarks demonstrate that our IGCF tracker performs favorably against state-of-the-art trackers while running on a single CPU core at 5 FPS.
+Traditional correlation filter (CF) \HL{-based} trackers typically rely only on ridge regression for online learning without the perception of instance level information of objects, which may lead to \HL{tracking drift and failures for them}. In this paper, we propose the Instance Guided Correlation Filter (IGCF) to improve the tracking robustness. Specifically, \HL{a deep network, namely InstMask, is designed} to generate the instance mask of objects, which are used to explicitly constraint the learning process of correlation filters. Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. Extensive experiments on several challenging benchmarks demonstrate that our IGCF tracker performs favorably against state-of-the-art trackers while running \HL{at 5 FPS on a single CPU core}.
 \end{abstract}
 
 \begin{keyword}
@@ -93,56 +98,50 @@ CNN \sep object tracking \sep DCF \sep self-correction
 \begin{CJK*}{UTF8}{gbsn}
 
 \section{Introduction}
-Object tracking is a fundamental topic in computer vision. Given the initialized state of an object in the starting frame of a video, the aim of tracking is to estimate the states of the object in the subsequent frames. Extensive studies \cite{Bolme2010VisualOT, Danelljan2014AccurateSE, Henriques2015HighSpeedTW, Li2014ASA, Nam2016LearningMC, Danelljan2015ConvolutionalFF, Wang2018SiamMask} have been carried out to address the challenges in object tracking, such as occlusion, illumination change, appearance change, fast motion and so on. 
+Object tracking is a fundamental topic in computer vision. Given the initialized state of an object in the starting frame of a video, the aim of tracking is to estimate the states of the object in the subsequent frames. \HL{Despite long-standing efforts \cite{Bolme2010VisualOT, Danelljan2014AccurateSE, Henriques2015HighSpeedTW, Li2014ASA, Nam2016LearningMC, Danelljan2015ConvolutionalFF, Wang2018SiamMask} in this area,  how the tracking accuracy and speed can strike a compromise on a low-cost platform  has largely remained an open question due to the tracking challenges,} such as occlusion, illumination change, appearance change, fast motion and so on\HL{, in the real-world applications including autonomous driving, robotics and augmented reality}. 
 
-[介绍DCF] In the past decade, there has been a surge of interest in discriminative correlation filter (DCF) approaches \cite{Bolme2010VisualOT, Danelljan2014AccurateSE, Henriques2015HighSpeedTW, Li2014ASA} which can efficiently utilize all spatial shifts of the training samples by exploiting the discrete Fourier transform. 
+In the past decade, there has been a surge of interest in discriminative correlation filter (DCF) approaches \cite{Bolme2010VisualOT, Danelljan2014AccurateSE, Henriques2015HighSpeedTW, Li2014ASA} which can \HL{approximately} utilize all spatial shifts of the training samples \HL{in an efficient way} by exploiting the discrete Fourier transform. However, for most of DCF trackers, the \HL{target position is} often represented only by a rough rectangular box. \HL{Thus the rectangular object regions, especially for the  irregularly shaped objects or those with a hollow center,} will be doped with \HL{much} background information, which may \HL{lead to tracking drift and failures}. Besides, the DCF trackers are often restricted to \HL{features without instance-level semantic information}, significantly limiting its potential.
 
-[传统DCF的不足之处] However, for most of DCF trackers, the targets are often represented only by a rough rectangular box. For irregularly shaped objects or those with a hollow center, the rectangular object regions will be doped with more background information, which may lead the tracker to drift and failure. Besides, the DCF trackers are often restricted to low-level features, significantly limiting its potential.
+Recently, many studies \cite{Danelljan2015LearningSR, Lukezic2017DiscriminativeCF, Galoogahi2017LearningBC, Xu2018LearningAD, Feng2018LearningSR} have \HL{demonstrated that the spatial constraints imposed on the class-agnostic instance to be tracked improve the correlation filter learning by reducing the background interference. This has} given impetus to the research area appreciably. However, most \HL{spatial constraints} are hand-designed and \HL{still} cannot perceive the \HL{instance-level semantic} information of objects to be tracked. \HL{Although instance-level semantic segmentation \cite{Pinheiro2015LearningTS}, which aims to assign semantic labels to every pixel in an image, is capable of extracting instance-level semantic information in an image, directly integrating the existing instance segmentation methods to provide spatial constraint for the correlation filter learning remains hard to strike a balance between tracking accuracy and speed.}
 
-[空间attention是DCF发展趋势] Recently, many studies \cite{Danelljan2015LearningSR, Lukezic2017DiscriminativeCF, Galoogahi2017LearningBC, Xu2018LearningAD, Feng2018LearningSR} have introduced spatial constraints into the learning of correlation filters, which have given impetus to the research area appreciably.
+%[介绍CNN跟踪器] Several CNN-based trackers \cite{Nam2016LearningMC, Danelljan2015ConvolutionalFF} have demonstrated the performance advantages of deep learning.
 
-[现有空间attention的不足之处] However, most spatial contraints are hand-designed and cannot perceive the instance level information of objects.
-
-[介绍CNN跟踪器] Several CNN-based trackers \cite{Nam2016LearningMC, Danelljan2015ConvolutionalFF} have demonstrated the performance advantages of deep learning.
-
-[CNN跟踪器的不足之处] However, these trackers also face the problem of lack of instance level information. Due to the inability of integrating target-specific information, most CNN based trackers do not provide a powerful model update strategy, resulting in inferior robustness. Furthermore, CNN-based trackers are often computationally expensive, making it difficult to run efficiently on the CPU. 
+%[CNN跟踪器的不足之处] However, these trackers also face the problem of lack of instance level information. Due to the inability of integrating target-specific information, most CNN based trackers do not provide a powerful model update strategy, resulting in inferior robustness. Furthermore, CNN-based trackers are often computationally expensive, making it difficult to run efficiently on the CPU. 
 
 \begin{figure} 
-    \subfig{\includegraphics[width=2.4cm]{images/coco/00893.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.4cm]{images/coco/01107.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.4cm]{images/coco/01108.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.4cm]{images/coco/01564.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.4cm]{images/coco/01664.jpg}}\\[0.2ex]
-    \subfig{\includegraphics[width=2.4cm]{images/coco/01939.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.4cm]{images/coco/02078.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.4cm]{images/coco/02285.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.4cm]{images/coco/02497.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.4cm]{images/coco/02589.jpg}}\\[0.2ex]
-    \subfig{\includegraphics[width=2.4cm]{images/coco/02700.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.4cm]{images/coco/03000.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.4cm]{images/coco/03327.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.4cm]{images/coco/03482.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.4cm]{images/coco/03733.jpg}}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/00893.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/01107.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/01108.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/01564.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/01664.jpg}}\\[0.2ex]
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/01939.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/02078.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/02285.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/02497.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/02589.jpg}}\\[0.2ex]
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/02700.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/03000.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/03327.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/03482.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.4cm]{images/coco/03733.jpg}}
     \caption{Segmentation results of InstMask on COCO2017 \cite{Lin2014MicrosoftCC} val dataset.}
     \label{fig:InstMask}
 \end{figure}
 
-[介绍分割领域] Semantic segmentation \cite{Pinheiro2015LearningTS} is another fundamental topic in computer vision, which aims to assign semantic labels to every pixel in an image. It is capable of extracting instance-level semantic information in an image. Therefore, the segmentation results can be used to provide better spatial constraint for the CF trackers.
+In this work, we propose the Instance Guided Correlation Filter (IGCF) \HL{to address the aforementioned limitations directly}. Specifically, a deep network\HL{, namely InstMask, is customizedly} designed to generate the instance masks of objects \HL{accurately and off-line end-to-end trained using the data-driven approach to learn plenty of semantic information from the segmentation training sets, e.g., COCO2017\cite{Lin2014MicrosoftCC} (see Fig. \ref{fig:InstMask}). The instance mask can explicitly constraint the learning process of correlation filters by suppressing the interference of \HL{background clutters} in the positive samples}. 
 
-[我们的解决方案：使用深度学习分割把空间约束做得更好] In this work, we propose the Instance Guided Correlation Filter (IGCF), that directly addresses all aforementioned limitations. Specifically, a deep network called InstMask is designed to generate the instance mask of objects, which are used to explicitly constraint the learning process of correlation filters. The instance mask can suppress the interference of background information in the positive samples during training. In order to obtain accurate and semantic segmentation results (see Fig. \ref{fig:InstMask}), we use the data-driven approach to generate instance-level masks. 
+Unlike common object segmentation tasks, we have designed \HL{our} new network structure and training method that enable InstMask to identify salient objects of \HL{arbitrary} category located \HL{near} the center of the \HL{search} patch, instead of \HL{identifying the objects whose categories only appear in the training set. Moreover, our network embodied with one $1 \times 1$ convolution layer allows a global receptive field to perceive the whole context information around the center salient object, and thus can provide a more accurate segmentation mask. Since it is such a lightweight network, our proposed tracking method optimally balances between the tracking accuracy and speed while running at 5 FPS on a single CPU core platform.} 
 
-[强调与一般分割的不同] Unlike common object segmentation tasks, we have designed new network structures and training methods that enable InstMask to identify salient objects of any category located in the center of the image patch, instead of identifying image categories only in the training set. 
-
-Besides, we discover that the DCF result updated online and the InstMask result with high-level semantic attributes are independent and complementary, so they can be integrated together to further improve tracking accuracy. Specifically, based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. The geometric center of the segmentation mask is used to correct the prediction bias of the correlation filter. Equipped with the InstMask module, the proposed IGCF not only performs the object tracking task well, but also can be used for the task of video object segmentation, which demonstrates the wide application space of this algorithm. The architecture of the proposed tracking framework IGCF is shown in Fig. \ref{fig:IGCF}.
+Besides, we \HL{notice that the correlation filters updated online for meeting the tracking adaptiveness requirement and the static InstMask module for satisfying the robustness demand are independent and complementary. So the outputs of the two components can be integrated together to further improve the tracking performance.} Specifically, based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. The geometric center of the segmentation mask is used to correct the prediction bias of the correlation \HL{filters}. Equipped with the InstMask module, the proposed IGCF not only performs the object tracking task well, but also can be used for the task of video object segmentation, which demonstrates the wide application \HL{scope} of our algorithm. The architecture of the proposed tracking framework IGCF is shown in Fig. \ref{fig:IGCF}.
 
 \begin{figure*}
     \centering
     \includegraphics[width=12cm]{images/instmask1.pdf}
-    \caption{Architecture of the tracking framework IGCF.}
+    \caption{Architecture of our tracking framework IGCF.}
     \label{fig:IGCF}
 \end{figure*}
 
-We perform comprehensive experiments on three tracking benchmarks: VOT2015 \cite{Kristan2015TheVO}, VOT2016 \cite{Kristan2016TheVO} and GOT-10K \cite{Huang2018GOT10kAL}. Our IGCF tracker performs favorably against state-of-the-art trackers while running on a single CPU core at 5 FPS. Finally, we perform qualitative experiments on the video object segmentation dataset DAVIS2016 \cite{Perazzi2016}, showing the powerful semantic segmentation and tracking capabilities of our algorithm.
+We \HL{performed} comprehensive experiments on three tracking benchmarks: VOT2015 \cite{Kristan2015TheVO}, VOT2016 \cite{Kristan2016TheVO} and GOT-10K \cite{Huang2018GOT10kAL}. Our IGCF tracker performs favorably against state-of-the-art trackers \HL{while balancing between tracking accuracy and speed.} Finally, we \HL{performed} qualitative experiments on the video object segmentation dataset DAVIS2016 \cite{Perazzi2016}, showing the powerful \HL{video} semantic segmentation and tracking capabilities of our algorithm.
 
 \section{Related works}
 The development of object tracking has a history of decades. Generally speaking, the goal of object tracking is to establish the positional relationship of the object to be tracked in a continuous video sequence, and obtain the complete motion trajectory of the object. In other words, given the target coordinate position of the first frame of the image, the exact positions of the target in the subsequent frames are calculated by the tracker. 
@@ -198,31 +197,25 @@ The optimal correlation filter $h$ is estimated by minimizing:
 \varepsilon(h) = \sum_{d=1}^{N_c}||f_d \star h_d - g||^2+\lambda||h_d||^2.
 \end{equation}
 
-As described in CSRDCF \cite{Lukezic2017DiscriminativeCF}, segmentation masks can be utilized to improve tracking performance. The segmentation mask of an image patch is a spatial map with elements either 1 or 0, that indicates whether pixels belong to the object in the image patch or belong to the background. During the filter training process, the filter $h$ is constrained by the mask $m$: $h \equiv m \odot h$. This constraint adapts the filter support to the part of object suitable for tracking, which enables a large training region to capture more context information and overcomes the limitations related to the rectangular shape assumption.
+\HL{Recently, many studies \cite{Danelljan2015LearningSR, Lukezic2017DiscriminativeCF, Galoogahi2017LearningBC, Xu2018LearningAD, Feng2018LearningSR} have demonstrated that the spatial constraints imposed on the class-agnostic instance to be tracked improve the correlation filter learning by reducing the background interference.} As described in CSRDCF \cite{Lukezic2017DiscriminativeCF}, the segmentation mask of an image patch is a spatial map with elements either 1 or 0, that indicates whether pixels belong to the object in the image patch or belong to the background. During the filter training process, the filter $h$ is constrained by the mask $m$: $h \equiv m \odot h$. This constraint adapts the filter support to the part of object suitable for tracking, which enables a large training region to capture more context information and overcomes the limitations related to the rectangular shape assumption.
 
 \subsection{InstMask}
-[背景] Recently, many studies \cite{Danelljan2015LearningSR, Lukezic2017DiscriminativeCF, Galoogahi2017LearningBC, Xu2018LearningAD, Feng2018LearningSR} have introduced spatial constraints into the learning of correlation filters, which have given impetus to the research area appreciably. In this paper, we are committed to generating segmentation masks of tracking targets to learn better correlation filters. For efficiency and performance reasons, an ideal segmentation method should possess three key characteristics: (1) seamless integration with the tracking process, (2) the segmentation module should be simple enough to accommodate the speed requirement of tracking (3) the proposed mask should match the object as accurately as possible.
+Recently, many studies \cite{Danelljan2015LearningSR, Lukezic2017DiscriminativeCF, Galoogahi2017LearningBC, Xu2018LearningAD, Feng2018LearningSR} have introduced spatial constraints into the learning of correlation filters, which have given impetus to the research area appreciably. In this paper, we are committed to generating segmentation masks of tracking targets to learn better correlation filters. For efficiency and performance reasons, an ideal segmentation method should possess three key characteristics: (1) seamless integration with the tracking process, (2) the segmentation module should be simple enough to accommodate the speed requirement of tracking (3) the proposed mask should match the object as accurately as possible.
 Most previous approaches for generating spatial constraints, rely on hand-designed rules or low-level image features like color histograms.
+In this paper, we present \HL{the InstMask network, which is customizedly designed to generate the instance masks of objects accurately and off-line end-to-end trained using the data-driven approach to learn plenty of semantic information from the segmentation training sets, e.g., COCO2017 \cite{Lin2014MicrosoftCC}. The instance mask can explicitly constraint the learning process of correlation filters by suppressing the interference of background clutters in the positive samples.} Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. This approach provides a notable gain in object tracking accuracy compared to classic DCF approaches.
+Unlike previous approaches for generating segmentation masks, we do not rely on edges, superpixels, or any other form of low-level segmentation. Instead, the core of our model is a ConvNet. By leveraging powerful ConvNet feature representations trained on ImageNet and adapted on the large amount of segmented training data available in COCO, we are able to generate semantic segmentation masks for targets to constrain the learning of correlation trakers.
+It is worth noting that it is sub-optimal to \HL{integrate the existing instance segmentation methods to provide spatial constraint for the correlation filter learning}. The general tracking algorithms usually have complex network structures, \HL{hard to strike a balance between tracking accuracy and speed}. In contrast, the segmentation network proposed in this paper is designed for tracking and is lightweight, running at 5 FPS on the CPU.
 
-[引出InstMask]  In this paper, we present a data-driven segmentation algorithm based on Convolutional Networks to constraint the learning of correlation filters. Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. This approach provides a notable gain in object tracking accuracy compared to classic DCF approaches.
-
-[强调语义性] Unlike previous approaches for generating segmentation masks, we do not rely on edges, superpixels, or any other form of low-level segmentation. Instead, the core of our model is a ConvNet. By leveraging powerful ConvNet feature representations trained on ImageNet and adapted on the large amount of segmented training data available in COCO, we are able to generate semantic segmentation masks for targets to constrain the learning of correlation trakers.
-
-[专为跟踪设计，快] It is worth noting that it is sub-optimal to migrate the existing segmentation algorithms directly into the DCF trackers. The general tracking algorithms usually have complex network structures and cannot meet the tracking speed requirements. In contrast, the segmentation network proposed in this paper is designed for tracking and is lightweight, running at 5 FPS on the CPU.
-
-[类别无关的通用分割器] The proposed InstMask is designed as a saliency object detector to capture the object mask in the search region. Consequently InstMask works as a class-agnostic segmentation network. Although InstMask uses COCO dataset \cite{Lin2014MicrosoftCC} with only 80 classes for training, the network is able to segment categories that do not appear in the training set, as shown in Fig. \ref{fig:IGSC}.
-
-[网络的输入是以目标为中心的patch]
 When tracking the $i$-th frame, the segmentation mask of the target in frame $i$ needs to be obtained to constrain the learning of the correlation filter. Since the tracker has generated $p_{i-1}$, i.e., the position of the target in frame $i-1$, and the displament of the target in 2 adjacent frames is small, we can crop the small image patch in frame $i$ centered on $p_{i-1}$ and send the patch to InstMask to get the segmentation mask.
 During tracking, the object position is assumed to be in the vicinity of the object position in the previous frame. So the input to InstMask is always the image region centered on the object position at the previous frame.
 This design has the following advantages: (1) Because of the strong consistency of the input data, the network can obtain accurate segmentation results using fewer parameters. (2) Because the network has lessparameters and the input image size is small, the inference speed is fast. (3) Searching around the targt's historical location can avoid the adverse effects of distractors located in the background. During training, each sample $k$ in the training set contains (1) the RGB input patch $x_k$, which contains an object roughly centered in the input patch, (2) the binary mask corresponding to the input patch $m_k$.
 
 We next describe the architecture and the training procedure.
 
-\sout{We propose to learn a fully convolutional network that returns the segmentation mask for the saliency object in a certain frame. To meet the needs of object tracking, there are several differences between InstMask and traditional object segmentation network. First, the InstMask is designed as a saliency object detector to capture the object mask in the search region. Consequently InstMask works as a class-agnostic segmentation network. Although InstMask uses COCO dataset \cite{Lin2014MicrosoftCC} with only 80 classes for training, the network is able to segment categories that do not appear in the training set, as shown in Fig. \ref{fig:IGSC}. Second, during tracking, the object position is assumed to be in the vicinity of the object position in the previous frame. So the input to InstMask is always the image region centered on the object position at the previous frame.}
+%\sout{We propose to learn a fully convolutional network that returns the segmentation mask for the saliency object in a certain frame. To meet the needs of object tracking, there are several differences between InstMask and traditional object segmentation network. First, the InstMask is designed as a saliency object detector to capture the object mask in the search region. Consequently InstMask works as a class-agnostic segmentation network. Although InstMask uses COCO dataset \cite{Lin2014MicrosoftCC} with only 80 classes for training, the network is able to segment categories that do not appear in the training set, as shown in Fig. \ref{fig:IGSC}. Second, during tracking, the object position is assumed to be in the vicinity of the object position in the previous frame. So the input to InstMask is always the image region centered on the object position at the previous frame.}
 
-\textbf{Architecture} The network architecture is shown in Table \ref{tab:InstMask}. The backbone of InstMask is constructed based on ResNet50 \cite{He2016DeepRL}, which consists of a stem block and 3 residual blocks.
-The input of InstMask is a 160$\times$160$\times$3 image patch. It is sent to the stem block, producing a 80$\times$80$\times$64 feature map. Then the feature map is sent to 3 residual blocks sequentially, producing feature maps of size 40$\times$40$\times$256, 20$\times$20$\times$512, 10$\times$10$\times$1024, respectively. Subsequently, the obtained feature map is sent to 3 convolution layers to generate the segmentation mask vector of length 3136. Finally, this vector is reshaped to 56$\times$56 to get the final segmentation mask.
+\textbf{Architecture} The network architecture is shown in Table \ref{tab:InstMask} and Fig. \ref{fig:net}. The backbone of InstMask is constructed based on ResNet50 \cite{He2016DeepRL}, which consists of a stem block and 3 residual blocks.
+The input of InstMask is a 160$\times$160$\times$3 image patch. It is sent to the stem block, producing a 80$\times$80$\times$64 feature map. Then the feature map is sent to 3 residual blocks sequentially, producing feature maps of size 40$\times$40$\times$256, 20$\times$20$\times$512, 10$\times$10$\times$1024, respectively. Subsequently, the obtained feature map is sent to 3 convolution layers to generate the segmentation mask vector of length 3136, \HL{which allows a global receptive field to perceive the whole context information around the center salient object.} Finally, this vector is reshaped to 56$\times$56 to get the final segmentation mask. \HL{Since it is such a lightweight network, our proposed tracking method optimally balances between the tracking accuracy and speed while running at 5 FPS on asingle CPU core platform, making it possible to deploy the proposed tracker into real-world applications including autonomous driving, robotics and augmented reality.}
 
 \begin{algorithm}
   \caption{The IGCF tracking algorithm.} 
@@ -254,7 +247,9 @@ L = -\sum_{x,y}l_{x,y}log(P_{x,y}+(1-l_{x,y}log(1-P_{x,y}))),
 \end{equation}
 where $l_{x,y} \in \{0,1\}$ is the label of the pixel $(x,y)$, and $P_{x,y}$ is the probability of pixel $(x,y)$ belonging to the foreground.
 
-The COCO2017 \cite{Lin2014MicrosoftCC} instance segmentation dataset is used to train InstMask. We train our model using stochastic gradient descent with a batch size of 32 examples, momentum of 0.9, and weight decay of 0.00005. There are totally 50 epoches performed and the learning rate is decreased in log space from $10^{-2}$ to $10^{-4}$. During training, the input image size is set to 160$\times$160, and the target is located at the center of the image, with a size of 112$\times$112. To enhance the generalization of the network, we perform data augmentation. Specifically, we consider translation shift (of $\pm$16 pixels), scale deformation (of $2^{\pm 1/4}$), and also horizontal flip.
+The COCO2017 \cite{Lin2014MicrosoftCC} instance segmentation dataset is used to train InstMask.
+\HL{Different from common segmentation networks which predict categories only appear in the training set, the proposed InstMask ignores category information of COCO dataset during training and works as a class-agnostic segmentation network, which means that InstMask is designed as a saliency object detector to capture the object mask in the search region. Although InstMask uses COCO dataset \cite{Lin2014MicrosoftCC} with only 80 classes for training, the network is able to segment categories that do not appear in the training set, as shown in Fig. \ref{fig:IGSC}.}
+We train our model using stochastic gradient descent with a batch size of 32 examples, momentum of 0.9, and weight decay of 0.00005. There are totally 50 epoches performed and the learning rate is decreased in log space from $10^{-2}$ to $10^{-4}$. During training, the input image size is set to 160$\times$160, and the target is located at the center of the image, with a size of 112$\times$112. To enhance the generalization of the network, we perform data augmentation. Specifically, we consider translation shift (of $\pm$16 pixels), scale deformation (of $2^{\pm 1/4}$), and also horizontal flip.
 
 It should be noted that the InstMask is offline training. That is to say, during the tracking process, the InstMask only needs to perform the forward propagation process without the back propagation of the gradient, which not only prevents the undesired drift, but also meets the real-time requirements of tracking.
 
@@ -273,8 +268,8 @@ Data & $160 \times 160 \times 3$ &  -\\\hline
 Stem Block & $80 \times 80 \times 64$ &  $ 7 \times 7 \text{ conv} $\\\hline
 \multirow{4}*{Res Block (1)} & $40 \times 40 \times 64$ &  $ 2 \times 2 \text{ maxpool} $\\\cline{2-3}
 ~ & $40 \times 40 \times 256$ &  $ \left [ \begin{array}{l} 1 \times 1 \text{ conv} \\ 3 \times 3 \text{ conv} \\ 1 \times 1 \text{ conv} \end{array} \right ] \times 3 $\\\hline
-Res Block (2) & $20 \times 20 \times 512$ &  $ \left [ \begin{array}{l} 1 \times 1 \text{ conv} \\ 3 \times 3 \text{ conv} \\ 1 \times 1 \text{ conv} \end{array} \right ] \times 3 $\\\hline
-Res Block (3) & $10 \times 10 \times 1024$ &  $ \left [ \begin{array}{l} 1 \times 1 \text{ conv} \\ 3 \times 3 \text{ conv} \\ 1 \times 1 \text{ conv} \end{array} \right ] \times 3 $\\\hline
+Res Block (2) & $20 \times 20 \times 512$ &  $ \left [ \begin{array}{l} 1 \times 1 \text{ conv} \\ 3 \times 3 \text{ conv} \\ 1 \times 1 \text{ conv} \end{array} \right ] \times 4 $\\\hline
+Res Block (3) & $10 \times 10 \times 1024$ &  $ \left [ \begin{array}{l} 1 \times 1 \text{ conv} \\ 3 \times 3 \text{ conv} \\ 1 \times 1 \text{ conv} \end{array} \right ] \times 6 $\\\hline
 \multirow{5}*{Decoder} & $10 \times 10 \times 128$ &  $ 1 \times 1 \text{ conv} $\\\cline{2-3}
 ~ & $1 \times 1 \times 512$ &  $ 10 \times 10 \text{ conv} $\\\cline{2-3}
 ~ & $1 \times 1 \times 3136$ &  $ 1 \times 1 \text{ conv} $\\\cline{2-3}
@@ -284,8 +279,15 @@ Res Block (3) & $10 \times 10 \times 1024$ &  $ \left [ \begin{array}{l} 1 \time
 \label{tab:InstMask}
 \end{table}
 
+\begin{figure*}
+    \centering
+    \includegraphics[width=12cm]{images/net.pdf}
+    \caption{Architecture of our IsntMask.}
+    \label{fig:net}
+\end{figure*}
+
 \subsection{Instance Guided Self-Correction Component} \label{sec:cog}
-InstMask not only helps to learn better filters, but also contributes to correcting inappropriate tracking results. On one hand, The result of DCF is generated by the ground truth position of the object in the first frame, and the following predicted object positions. On the other hand,  InstMask is trained by COCO \cite{Lin2014MicrosoftCC}, and worked as a universal saliency object detector, which recognizes the object at the center of the image. During tracking, InstMask dose not need any information of ground truth and the following predicted results. Therefore, the results of DCF and InstMask are independent and complementary, thus can be integrated together to further improve tracking accuracy. In this subsection, we present a method to integrate the DCF result and the InstMask result, to make a more stable tracker.
+InstMask not only helps to learn better filters, but also contributes to correcting inappropriate tracking results. On one hand, The result of DCF is generated by the ground truth position of the object in the first frame, and the following predicted object positions. On the other hand,  InstMask is trained by COCO \cite{Lin2014MicrosoftCC}, and worked as a universal saliency object detector, which recognizes the object at the center of the image. During tracking, InstMask dose not need any information of ground truth and the following predicted results. Therefore, \HL{the correlation filters updated online for meeting the tracking adaptiveness requirement and the static InstMask module for satisfying the robustness demand are independent and complementary. So the outputs of the two components can be integrated together to further improve the tracking performance.} In this subsection, we present a method to integrate the DCF result and the InstMask result, to make a more stable tracker.
 
 In DCF module, the position of the maximum of the correlation between filter $h$ and feature $f$ is regarded as the object position in the current frame. However, because of the online mechanism, the correlation filters are easily drift. So it's sub-optimal to only use the DCF result as the final tracking result.
 
@@ -314,20 +316,20 @@ where $c_{dcf}$ is the position predicted by DCF, $\alpha$ is the super-paramete
 Thanks to the robustness of the segmentation results, the tracker can correct itself when the DCF result shows an unstable drift. The effectiveness of the proposed instance guided self-correction component is shown in Fig. \ref{fig:IGSC}.
 
 \begin{figure} 
-    \subfig{\includegraphics[width=2.45cm]{images/cog/birds1/00003.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.45cm]{images/cog/birds1/00005.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.45cm]{images/cog/birds1/00007.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.45cm]{images/cog/birds1/00013.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.45cm]{images/cog/birds1/00057.jpg}}\\[0.2ex]
-    \subfig{\includegraphics[width=2.45cm]{images/cog/book/00002.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.45cm]{images/cog/book/00005.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.45cm]{images/cog/book/00011.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.45cm]{images/cog/book/00013.jpg}}                     \hspace{-0.6em}    \subfig{\includegraphics[width=2.45cm]{images/cog/book/00016.jpg}}\\[0.2ex]
-    \subfig{\includegraphics[width=2.45cm]{images/cog/butterfly/00015.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.45cm]{images/cog/butterfly/00019.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.45cm]{images/cog/butterfly/00025.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.45cm]{images/cog/butterfly/00027.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.45cm]{images/cog/butterfly/00031.jpg}}
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/birds1/00003.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/birds1/00005.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/birds1/00007.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/birds1/00013.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/birds1/00057.jpg}}\\[0.2ex]
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/book/00002.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/book/00005.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/book/00011.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/book/00013.jpg}}                     \hspace{-0.6em}    \subfloat{\includegraphics[width=2.45cm]{images/cog/book/00016.jpg}}\\[0.2ex]
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/butterfly/00015.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/butterfly/00019.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/butterfly/00025.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/butterfly/00027.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.45cm]{images/cog/butterfly/00031.jpg}}
     \caption{The tracking result before (green) and after (blue) the instance guided self-correction component.}
     \label{fig:IGSC}
 \end{figure}
@@ -430,21 +432,21 @@ Fig. \ref{fig:vot16} shows the EAO performance on the VOT2016. Among the compare
 We compare our algorithm, denoted as IGCF, with the following trackers: CFNetc2 \cite{Valmadre2017EndtoEndRL}, ECOhc \cite{Danelljan2017ECOEC}, CFNetc5 \cite{Valmadre2017EndtoEndRL}, CFNetc1 \cite{Valmadre2017EndtoEndRL}, BACF \cite{Galoogahi2017LearningBC}, MEEM \cite{Zhang2014MEEMRT}, DAT \cite{Possegger2015InDO}, DSST \cite{Danelljan2014AccurateSE}, SAMF \cite{Li2014ASA}, Staple \cite{Bertinetto2016StapleC}, SRDCFdecon \cite{Danelljan2016AdaptiveDO}, SRDCF \cite{Danelljan2015LearningSR}, fDSST \cite{Danelljan2017DiscriminativeSS}, CSK \cite{Henriques2012ExploitingTC}, KCF \cite{Henriques2015HighSpeedTW}, L1APG \cite{Bao2012RealTR}, LK \cite{Shi1994GoodFT} and IVT \cite{Ross2007IncrementalLF}. The success plot of the evaluated trackers is shown in Fig. \ref{fig:got10k}.  The AO score of our method is 0.299, which outperforms all other listed competitive tracking algorithms.
 
 \begin{figure} 
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00001.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00021.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00032.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00069.jpg}}          \hspace{-0.6em}        
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00079.jpg}}\\[0.2ex]
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/parkour/00001.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/parkour/00006.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/parkour/00026.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/parkour/00063.jpg}}                     \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/parkour/00065.jpg}}\\[0.2ex]
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00001.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00014.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00017.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00036.jpg}}                   \hspace{-0.6em}
-    \subfig{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00067.jpg}}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00001.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00021.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00032.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00069.jpg}}          \hspace{-0.6em}        
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00079.jpg}}\\[0.2ex]
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/parkour/00001.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/parkour/00006.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/parkour/00026.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/parkour/00063.jpg}}                     \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/parkour/00065.jpg}}\\[0.2ex]
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00001.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00014.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00017.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00036.jpg}}                   \hspace{-0.6em}
+    \subfloat{\includegraphics[width=2.43cm]{images/davis16val/bmx-trees/00067.jpg}}
     \caption{Qualitative results of our method in DAVIS2016 VAL dataset.}
     \label{fig:davis}
 \end{figure}
