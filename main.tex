@@ -83,7 +83,7 @@
 \address[address4]{Department of Computer Science and Information Systems, Birkbeck College, London WC1E 7HX, United Kingdom}
 
 \begin{abstract}
-Traditional correlation filter (CF) based trackers typically rely only on ridge regression for online learning without any prior information about the target. This lack of information may lead to tracking drift or complete failure of the track. We propose the Instance Guided Correlation Filter (IGCF) to improve tracking robustness. Specifically, a deep network, namely InstMask, is designed to generate instance masks for targets. This masks are used to constraint the learning of the correlation filters. Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. Extensive experiments on several challenging benchmarks demonstrate that our IGCF tracker performs favorably compared with state-of-the-art trackers while running at 5 FPS on a single CPU core.
+Traditional correlation filter (CF) based trackers typically rely only on ridge regression for online learning without any without the perception of instance level information of targets. This lack of information may lead to tracking drift or complete failure of the track. We propose the Instance Guided Correlation Filter (IGCF) to improve tracking robustness. Specifically, a deep network, namely InstMask, is designed to generate instance masks for targets. This masks are used to constraint the learning of the correlation filters. Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. Extensive experiments on several challenging benchmarks demonstrate that our IGCF tracker performs favorably compared with state-of-the-art trackers while running at 5 FPS on a single CPU core.
 \end{abstract}
 
 \begin{keyword}
@@ -164,7 +164,7 @@ The ECO tracker \cite{Danelljan2016ECOEC} includes in the core DCF formulation a
 Held et al. \cite{held2016learning} propose an off-line trained neural network to track targets at 100 fps on a GPU platform. They use a simple feed-forward network without online training. The network learns a generic relationship between object motion and appearance and can be used to track novel objects that do not appear in the training set. 
 Recently, a series of trackers such as SiamFC \cite{bertinetto2016fully}, SiamRPN \cite{Li2018HighPV}, DasiamRPN \cite{zhu2018distractor} and SiamMask \cite{Wang2018SiamMask}, use a siamese network to learn the similarity between search images and exemplar images. They obtain a good balance between tracking speed and accuracy. SiamMask is the first attempt to perform both tracking and segmentation simultaneously in one end-to-end learning framework.
 
-Despite attractive performances both in accuracy and robustness, most of the above trackers only exploit features extracted from deep convolutional neural networks. There is a lack of semantic information semantic information at the instance level. Moreover, they have a high computational overhead for feature extraction, and thus are not suitable for low-cost platforms. For example, the SiamMask algorithm runs only at 1 fps on the cpu platform.
+Despite attractive performances both in accuracy and robustness, most of the above trackers only exploit features extracted from deep convolutional neural networks. There is a lack of semantic information semantic information at the instance level. Moreover, they have a high computational overhead for feature extraction, and thus are not suitable for low-cost platforms. For example, the SiamMask algorithm runs only at 1 FPS on the Intel E5-2620 CPU platform.
 
 There are also some works dedicated to improving tracking robustness using a self-correction mechanism to mitigate the tracking drift. For instance in \cite{fan2017parallel}, the tracking framework consists of two components, a tracker and a verifier, working in parallel on two separate threads. The tracker provides real-time tracking inference and is expected to perform well most of the time. In contrast, the verifier checks the tracking results and corrects the tracker when needed.
 
@@ -182,7 +182,7 @@ The optimal correlation filter $h$ is estimated by minimizing:
 \varepsilon(h) = \sum_{d=1}^{N_c}||f_d \star h_d - g||^2+\lambda||h_d||^2.
 \end{equation}
 
-Recently, many studies \cite{Danelljan2015LearningSR, Lukezic2017DiscriminativeCF, Galoogahi2017LearningBC, Xu2018LearningAD, Feng2018LearningSR} have demonstrated that spatial constraints imposed on a target improve the correlation filter learning by reducing the background interference. As described in \cite{Lukezic2017DiscriminativeCF}, the segmentation mask of an image patch is a spatial map with elements either 1 or 0, that indicate whether pixels belong to the target or belong to the background. During the filter training process, the filter $h$ is constrained by the mask $m$: $h \equiv m \odot h$. This constraint adapts the filter support to the part of the target suitable for tracking. This makes it possible to use a large training region to capture more context information and overcomes the limitations of the rectangular boxes.
+Recently, many studies \cite{Danelljan2015LearningSR, Lukezic2017DiscriminativeCF, Galoogahi2017LearningBC, Xu2018LearningAD, Feng2018LearningSR} have demonstrated that spatial constraints imposed on a target improve the correlation filter learning by reducing the background interference. As described in \cite{Lukezic2017DiscriminativeCF}, the segmentation mask of an image patch is a spatial map with elements either 1 or 0, that indicate whether pixels belong to the target or belong to the background. During the filter training process, the filter $h$ is constrained by the mask $m$: $h \equiv m \odot h$, where $\odot$ represents the Hadamard (element-wise) product. This constraint adapts the filter support to the part of the target suitable for tracking. This makes it possible to use a large training region to capture more context information and overcomes the limitations of the rectangular boxes.
 
 \subsection{InstMask}
 Recently, many studies \cite{Danelljan2015LearningSR, Lukezic2017DiscriminativeCF, Galoogahi2017LearningBC, Xu2018LearningAD, Feng2018LearningSR} have introduced spatial constraints into the learning of correlation filters with good results. In this paper we use segmentation masks of tracked targets to learn better correlation filters. For efficiency and performance reasons, an ideal segmentation method should possess three key characteristics: (1) seamless integration with the tracking process, (2) be simple enough to accommodate the speed requirement of tracking, and (3) the proposed segment should match the target as accurately as possible.
@@ -197,8 +197,9 @@ This design has the following advantages: (1) Because of the strong consistency 
 We next describe the architecture and the training procedure.
 
 \textbf{Architecture} The network architecture is shown in Table \ref{tab:InstMask} and Fig. \ref{fig:net}. The backbone of InstMask is constructed based on ResNet50 \cite{He2016DeepRL}, which consists of a stem block and 3 residual blocks.
-The input to InstMask is a 160$\times$160$\times$3 image patch. It is sent to the stem block, producing a 80$\times$80$\times$64 feature map. Then the feature map is sent to 3 residual blocks sequentially, producing feature maps of size 40$\times$40$\times$256, 20$\times$20$\times$512, 10$\times$10$\times$1024, respectively. Subsequently, the obtained feature map is sent to three convolution layers to generate the segmentation mask vector of length 3136, which allows a global receptive field to perceive all of the contextual information about the target. Finally, this vector is reshaped to 56$\times$56 to get the final segmentation mask. Since it is such a lightweight network, our proposed tracking method optimally balances the tracking accuracy and speed while running at 5 FPS on a single CPU core platform, making it possible to deploy the tracker in real-world applications including autonomous driving, robotics and augmented reality.
+The input to InstMask is a 160$\times$160$\times$3 image patch. It is sent to the stem block, producing a 80$\times$80$\times$64 feature map. Then the feature map is sent to 3 residual blocks sequentially, producing feature maps of size 40$\times$40$\times$256, 20$\times$20$\times$512, 10$\times$10$\times$1024, respectively. Subsequently, the obtained feature map is sent to three convolution layers to generate the vector of length 3136, which allows a global receptive field to perceive all of the contextual information about the target. Finally, this vector is reshaped to 56$\times$56 to get the final segmentation mask. Since it is such a lightweight network, our proposed tracking method optimally balances the tracking accuracy and speed while running at 5 FPS on the platform with a Intel E5-2620 CPU core, making it possible to deploy the tracker in real-world applications including autonomous driving, robotics and augmented reality.
 
+\iffalse
 \begin{algorithm}
   \caption{The IGCF tracking algorithm.} 
   \begin{algorithmic}
@@ -222,12 +223,13 @@ The input to InstMask is a 160$\times$160$\times$3 image patch. It is sent to th
   \end{enumerate}
 \end{algorithmic}
 \end{algorithm}
+\fi
 
-\textbf{Training} During training, the 56$\times$56 mask is up-sampling to the original image size 160$\times$160 and the loss is calculated as:
+\textbf{Training} During training, the 56$\times$56 mask is up-sampling to the original image size 160$\times$160. Let $l$ denotes pixel-wise ground-truth mask of size $w \times h$. The loss is calculated as:
 \begin{equation}
-L = -\sum_{x,y}l_{x,y}log(P_{x,y}+(1-l_{x,y}log(1-P_{x,y}))),
+L = \frac{1}{wh} \sum_{xy}{log(1+e^{-l_{x,y}P_{x,y}})},
 \end{equation}
-where $l_{x,y} \in \{0,1\}$ is the label of the pixel $(x,y)$, and $P_{x,y}$ is the probability of pixel $(x,y)$ belonging to the foreground.
+where $l_{x,y} \in \{ \pm 1 \}$ is the label corresponding to pixel $(x,y)$ of the object mask, and $P_{x,y}$ is the prediction of InstMask at location $(x,y)$.
 
 The COCO2017 \cite{Lin2014MicrosoftCC} instance segmentation dataset is used to train InstMask.
 Contrast with many segmentation networks which only predict categories that appear in the training set, the proposed InstMask ignores category information during training and works as a class-agnostic segmentation network. In effect, InstMask detects salient targets in the search region. Although InstMask uses COCO dataset \cite{Lin2014MicrosoftCC} with only 80 classes for training, the network is able to segment targets in categories that do not appear in the training set, as shown in Fig. \ref{fig:IGSC}.
@@ -236,8 +238,7 @@ We train our model using stochastic gradient descent with a batch size of 32 exa
 InstMask is trained offline. During the tracking InstMask only carries out a forward propagation process without the back propagation of the gradient. This not only prevents drift, but also meets the real-time requirements of tracking.
 
 Although our model shares high level similarities with CSRDCF \cite{Lukezic2017DiscriminativeCF}, the principle of the implementation is very different.
-In CSRDCF \cite{Lukezic2017DiscriminativeCF}, the segmentation masks are generated using the color histograms of the target foreground and background. This heuristic approach has several disadvantages: (1) Since only low-level pixel information is used, it is difficult to accurately segment an target. (2) The CSRDCF uses unreliable prior information about the target position to adjust inaccurate segmentation results. This introduces further errors in complex tracking scenarios. (3) In order to adapt to the apparent changes of the target, the histogram model is constantly updated during the tracking process, which easily leads to drift of the tracker. 
-Compared with CSRDCF, In contrast, InstMask does not update the colour histogram online. This improves computational efficiency while avoiding the undesired drift. Besides, tracking results are more accurate because of the use of semantic level rather than pixel-level information for segmentation.
+In CSRDCF \cite{Lukezic2017DiscriminativeCF}, the segmentation masks are generated using the color histograms of the target and background. This heuristic approach has several disadvantages: (1) Since only low-level pixel information is used, it is difficult to accurately segment an target. (2) In order to adapt to the apparent changes of the target, the histogram model is constantly updated during the tracking process, which easily leads to drift of the tracker. In contrast, InstMask does not update the colour histogram online. This improves computational efficiency while avoiding the undesired drift. Besides, tracking results are more accurate because of the use of semantic level rather than pixel-level information for segmentation.
 
 \setlength\extrarowheight{1pt}
 \begin{table}
@@ -317,7 +318,7 @@ Thanks to the robustness of the segmentation results, the tracker can correct it
 \end{figure}
 
 \subsection{Overview}
-The tracking process (Alg. 1) consists of two phases: localization and model update. 
+The tracking process consists of two phases: localization and model update. 
 At the localization phase, the target position $p_t$ is the position of the maximum in correlation between $h_{t-1}$ and image patch features $f$ extracted from the position $p_{t-1}$ and weighted by the channel reliability scores $w$ (Eq. \ref{eq:dcf}).
 The segmentation mask $m$ is estimated using the proposed InstMask network (Sect. \ref{sec:InstMask}).
 The centroid of the segmentation mask is used to correct the prediction bias of the correlation filter (Sect. \ref{sec:cog}).
@@ -326,9 +327,9 @@ The channel detection reliability $\tilde{w}^{(det)}$ is estimated as follows \c
 \begin{equation} \label{eq:det}
 \tilde w_d^{(det)} = max(1 - \rho_d^{max2} / \rho_d^{max1}, 0.5),
 \end{equation}
-which reflects how uniquely each channel votes for a single target location. The $\tilde w_d^{(det)}$ are used to calculate $w$ later. $\rho_d^{max2}$ and $\rho_d^{max1}$ are the second and first highest non-adjacent peaks in the channel response map, respectively.
+which reflects how uniquely each channel votes for a single target location. The $\tilde w_d^{(det)}$ are used to calculate $w$ later (Eq. \ref{eq:c}). $\rho_d^{max2}$ and $\rho_d^{max1}$ are the second and first highest non-adjacent peaks in the correlation response of channel $d$, respectively.
 
-At the model update phase, the new filter $\tilde{h}$ is estimated using mask $m$. We use the iterative approach proposed in \cite{Lukezic2017DiscriminativeCF} for efficiently solving the filter. Let $\hat{l}$ be the complex Lagrange multiplier, $\mu > 0$, $h_m=m \odot h$, $\hat{h}^0 = h_{t-1}$ and $\hat{l}^0 = 0$. In each iteration, the following sub-problems are solved sequentially:
+At the model update phase, the new filter $\tilde{h}$ is estimated using mask $m$. We use the iterative approach proposed in \cite{Lukezic2017DiscriminativeCF} for efficiently solving the filter. Let $l$ be the Lagrange multiplier, $\mu > 0$, $h_m=m \odot h$, $\hat{h}^0 = h_{t-1}$ and $\hat{l}^0 = 0$. In each iteration, the following sub-problems are solved sequentially as in \cite{Lukezic2017DiscriminativeCF}:
 \begin{equation} \label{eq:h1}
 \hat{h}_c^{i+1} = \frac{\hat{f} \odot \bar{\hat{g}} +(\mu^i \hat{h}_m^i - \hat{l}^i)}{\bar{\hat{f}} \odot \hat f + \mu^i}
 \end{equation}
@@ -338,11 +339,11 @@ h^{i+1} = \frac{m \odot \mathcal{F}^{-1}[\hat{l}^i + \mu^i\hat{h}_c^{i+1}]}{\fra
 \begin{equation} \label{eq:h3}
 \hat{l}^{i+1} = \hat{l}^i + \mu(\hat{h}_c^{i+1} - \hat{h}^{i+1})
 \end{equation}
-Then the channel reliability \cite{Lukezic2017DiscriminativeCF} is calculated as follows: 
+Then the channel reliability $\tilde w_d$ \cite{Lukezic2017DiscriminativeCF} consisting of the channel learning reliability $\tilde w_d^{(lrn)}$ and the channel detection reliability $\tilde w_d^{(det)}$ is calculated as follows: 
 \begin{equation} \label{eq:c}
 \tilde w_d = \tilde w_d^{(lrn)} \cdot \tilde w_d^{(det)},
 \end{equation}
-where $\tilde{w}^{(lrn)}$ is the learning channel reliability representing the maximum response value of a learned channel filter:
+where $\tilde{w}^{(lrn)}$ is represents the maximum response value of a learned channel filter:
 \begin{equation} \label{eq:lrn}
 \tilde{w}_d^{lrn} = max(f_d * h_d).
 \end{equation}
@@ -400,7 +401,7 @@ CSRDCF \cite{Lukezic2017DiscriminativeCF}, SRDCF \cite{Danelljan2015LearningSR},
 GOT-10k \cite{Huang2018GOT10kAL} is a large high-diversity database for generic object tracking. The dataset contains more than 10000 video segments of real-world moving objects and over 1.5 million manually labeled bounding boxes. There are 563 classes of real-world moving objects and 87 classes of motion patterns. We evaluate our tracker on the GOT-10k test subset which embodies 84 object classes and 32 motion patterns with 180 video segments. To the best of our knowledge, GOT-10k is by far the richest motion trajectory dataset.
 The evaluation metric of GOT-10k is average overlap (AO), which denotes the average of overlaps between all groundtruth and estimated bounding boxes. 
 
-We compare our algorithm, denoted as IGCF, with the following trackers: CFNetc2 \cite{Valmadre2017EndtoEndRL}, ECOhc \cite{Danelljan2017ECOEC}, CFNetc5 \cite{Valmadre2017EndtoEndRL}, CFNetc1 \cite{Valmadre2017EndtoEndRL}, BACF \cite{Galoogahi2017LearningBC}, MEEM \cite{Zhang2014MEEMRT}, DAT \cite{Possegger2015InDO}, DSST \cite{Danelljan2014AccurateSE}, SAMF \cite{Li2014ASA}, Staple \cite{Bertinetto2016StapleC}, SRDCFdecon \cite{Danelljan2016AdaptiveDO}, SRDCF \cite{Danelljan2015LearningSR}, fDSST \cite{Danelljan2017DiscriminativeSS}, CSK \cite{Henriques2012ExploitingTC}, KCF \cite{Henriques2015HighSpeedTW}, L1APG \cite{Bao2012RealTR}, LK \cite{Shi1994GoodFT} and IVT \cite{Ross2007IncrementalLF}. The success plot of the evaluated trackers is shown in Fig. \ref{fig:got10k}. The AO score of our method is 0.299, which outperforms all other listed competitive tracking algorithms.
+We compare our algorithm, denoted as IGCF, with the following trackers: CFNetc2 \cite{Valmadre2017EndtoEndRL}, ECOhc \cite{Danelljan2017ECOEC}, CFNetc5 \cite{Valmadre2017EndtoEndRL}, CFNetc1 \cite{Valmadre2017EndtoEndRL}, BACF \cite{Galoogahi2017LearningBC}, MEEM \cite{Zhang2014MEEMRT}, DAT \cite{Possegger2015InDO}, DSST \cite{Danelljan2014AccurateSE}, SAMF \cite{Li2014ASA}, Staple \cite{Bertinetto2016StapleC}, SRDCFdecon \cite{Danelljan2016AdaptiveDO}, SRDCF \cite{Danelljan2015LearningSR}, fDSST \cite{Danelljan2017DiscriminativeSS}, CSK \cite{Henriques2012ExploitingTC}, KCF \cite{Henriques2015HighSpeedTW}, L1APG \cite{Bao2012RealTR}, LK \cite{Shi1994GoodFT} and IVT \cite{Ross2007IncrementalLF}. The success plot of the evaluated trackers is shown in Fig. \ref{fig:got10k}. It represents the percentage of frames for which the overlap measure exceeds a threshold, with respect to different thresholds. The AO score of our method is 0.299, which outperforms all other listed competitive tracking algorithms.
 
 \begin{figure} 
     \subfloat{\includegraphics[width=2.43cm]{images/davis16val/paragliding-launch/00001.jpg}}          \hspace{-0.6em}        
@@ -427,9 +428,8 @@ We compare our algorithm, denoted as IGCF, with the following trackers: CFNetc2 
 Equipped with the InstMask module, the proposed tracker not only performs target tracking well, but it can also be used for video segmentation. DAVIS \cite{Perazzi2016} is a video object segmentation dataset, which consists of fifty high quality video sequences, spanning multiple occurrences of common video object segmentation challenges such as occlusions, motion blur and appearance changes. We performed qualitative experiments on the validation set of DAVIS2016. The visualization results are shown in Fig. \ref{fig:davis}. The results show that the proposed IGCF can accurately recover the contour of a target, which explains to some extent why IGCF can achieve performance improvement in tracking.
 
 \section{Conclusion}
-In this paper, we propose a novel target tracker which combines the advantages of deep neural networks and DCF trackers to improve the performance of object tracking.
-The InstMask is used to constrain the learning process of correlation filters. Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift to the DCF.
-The segmentation result from CNN can effectively correct the unstable drift of DCF.
+In this paper, we propose a novel target tracker which combines the advantages of deep neural networks and correlation filters to improve the performance of object tracking.
+The InstMask is used to constrain the learning process of correlation filters. Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift to the correlation filter.
 Experiment results exhibit the superior robustness and efficiency of the proposed method by comparing it with state-of-the-art trackers.
 
 \end{CJK*}
