@@ -1,0 +1,96 @@
+\documentclass[review]{elsarticle}
+
+\usepackage{lineno,hyperref}
+\modulolinenumbers[5]
+
+% for alg.
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{enumitem}
+\usepackage{balance}
+\usepackage{subfig}
+\usepackage{color}
+\def\algbackskip{\hskip\dimexpr-\algorithmicindent+\labelsep}
+\def\LState{\State \algbackskip}
+
+% for table.
+\usepackage{multirow, array, amsmath}
+
+% for Chinese
+\usepackage{CJKutf8}
+
+% cancel line
+\usepackage{ulem}
+
+\journal{Pattern Recognition}
+
+\newcommand{\replace}[1]{$\langle$\textit{#1}$\rangle$}
+\newcommand{\HL}[1]{\textcolor[rgb]{1.00,0.00,0.00}{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%% Elsevier bibliography styles
+%%%%%%%%%%%%%%%%%%%%%%%
+%% To change the style, put a % in front of the second line of the current style and
+%% remove the % from the second line of the style you would like to use.
+%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Numbered
+%\bibliographystyle{model1-num-names}
+
+%% Numbered without titles
+%\bibliographystyle{model1a-num-names}
+
+%% Harvard
+%\bibliographystyle{model2-names.bst}\biboptions{authoryear}
+
+%% Vancouver numbered
+%\usepackage{numcompress}\bibliographystyle{model3-num-names}
+
+%% Vancouver name/year
+%\usepackage{numcompress}\bibliographystyle{model4-names}\biboptions{authoryear}
+
+%% APA style
+%\bibliographystyle{model5-names}\biboptions{authoryear}
+
+%% AMA style
+%\usepackage{numcompress}\bibliographystyle{model6-num-names}
+
+%% `Elsevier LaTeX' style
+\bibliographystyle{elsarticle-num}
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{IGCF: Instance Guided Correlation Filter}
+
+\author[address1,address3]{Zhenbang Li}
+\ead{zhenbang.li@nlpr.ia.ac.cn}
+\author[address1,address3]{Qiang Wang}
+\ead{qiang.wang@nlpr.ia.ac.cn}
+\author[address1]{Jin Gao}
+\ead{jin.gao@nlpr.ia.ac.cn}
+\author[address1]{Bing Li\corref{mycorrespondingauthor}}
+\cortext[mycorrespondingauthor]{Corresponding author}
+\ead{bli@nlpr.ia.ac.cn}
+\author[address1,address2,address3]{Weiming Hu}
+\ead{wmhu@nlpr.ia.ac.cn}
+\author[address4]{Stephen J. Maybank}
+\ead{sjmaybank@dcs.bbk.ac.uk}
+\address[address1]{National Laboratory of Pattern Recognition, Institute of Automation, Chinese Academy of Sciences, Beijing 100190, PR China}
+\address[address2]{CAS Center for Excellence in Brain Science and Intelligence Technology, Chinese Academy of Sciences, Beijing 100190, PR China}
+\address[address3]{University of Chinese Academy of Sciences, Beijing 100190, PR China}
+\address[address4]{Department of Computer Science and Information Systems, Birkbeck College, London WC1E 7HX, United Kingdom}
+
+\begin{abstract}
+Traditional correlation filter (CF) based trackers typically rely only on ridge regression for online learning without the perception of instance level information of targets. This lack of information may lead to tracking drift or complete failure of the tracker. We propose the Instance Guided Correlation Filter (IGCF) to improve tracking robustness. Specifically, a deep network, namely InstMask, is designed to generate instance masks for targets. The masks are used to constrain the learning of the correlation filters. Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers. Extensive experiments on several challenging benchmarks demonstrate that our IGCF tracker performs favorably compared with state-of-the-art trackers while running at 5 FPS on a single CPU core.
+\end{abstract}
+
+\begin{keyword}
+CNN \sep object tracking \sep DCF \sep self-correction
+\end{keyword}
+
+\end{frontmatter}
+
+\end{document}

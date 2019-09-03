@@ -1,0 +1,87 @@
+\documentclass[preprint,12pt]{article}
+
+%% Use the option review to obtain double line spacing
+%% \documentclass[authoryear,preprint,review,12pt]{elsarticle}
+
+%% Use the options 1p,twocolumn; 3p; 3p,twocolumn; 5p; or 5p,twocolumn
+%% for a journal layout:
+%% \documentclass[final,1p,times]{elsarticle}
+%% \documentclass[final,1p,times,twocolumn]{elsarticle}
+%% \documentclass[final,3p,times]{elsarticle}
+%% \documentclass[final,3p,times,twocolumn]{elsarticle}
+%% \documentclass[final,5p,times]{elsarticle}
+%% \documentclass[final,5p,times,twocolumn]{elsarticle}
+
+%% For including figures, graphicx.sty has been loaded in
+%% elsarticle.cls. If you prefer to use the old commands
+%% please give \usepackage{epsfig}
+%\usepackage{lineno}
+%% The amssymb package provides various useful mathematical symbols
+
+%\usepackage{color}
+%\usepackage{booktabs}
+%\usepackage{xspace}
+%\usepackage{ulem}
+%% The amsthm package provides extended theorem environments
+%% \usepackage{amsthm}
+
+%% The lineno packages adds line numbers. Start line numbering with
+%% \begin{linenumbers}, end it with \end{linenumbers}. Or switch it on
+%% for the whole article with \linenumbers.
+
+%\makeatletter
+%\DeclareRobustCommand\onedot{\futurelet\@let@token\@onedot}
+%\def\@onedot{\ifx\@let@token.\else.\null\fi\xspace}
+
+%\def\eg{\emph{e.g}\onedot} \def\Eg{\emph{E.g}\onedot}
+%\def\ie{\emph{i.e}\onedot} \def\Ie{\emph{I.e}\onedot}
+%\def\cf{\emph{c.f}\onedot} \def\Cf{\emph{C.f}\onedot}
+%\def\etc{\emph{etc}\onedot} \def\vs{\emph{vs}\onedot}
+%\def\wrt{w.r.t\onedot} \def\dof{d.o.f\onedot}
+%\def\etal{\emph{et al}\onedot}
+%\makeatother
+
+% \journal{Pattern Recognition}
+\title{Highlights}
+\date{}
+\begin{document}
+
+
+
+%% Title, authors and addresses
+
+%% use the tnoteref command within \title for footnotes;
+%% use the tnotetext command for theassociated footnote;
+%% use the fnref command within \author or \address for footnotes;
+%% use the fntext command for theassociated footnote;
+%% use the corref command within \author for corresponding author footnotes;
+%% use the cortext command for theassociated footnote;
+%% use the ead command for the email address,
+%% and the form \ead[url] for the home page:
+%% \title{Title\tnoteref{label1}}
+%% \tnotetext[label1]{}
+%% \author{Name\corref{cor1}\fnref{label2}}
+%% \ead{email address}
+%% \ead[url]{home page}
+%% \fntext[label2]{}
+%% \cortext[cor1]{}
+%% \address{Address\fnref{label3}}
+%% \fntext[label3]{}
+\maketitle
+\begin{itemize}
+    \item A deep network, namely InstMask, is designed to generate instance masks for targets. The masks are used to constrain the learning of the correlation filters.
+    \item Based on the instance-level segmentation, we further propose a self-correction mechanism to mitigate the drift problem of CF trackers.
+    \item Extensive experiments on several challenging benchmarks demonstrate that our IGCF tracker performs favorably compared with state-of-the-art trackers while running at 5 FPS on a single CPU core.
+\end{itemize}
+
+%% use optional labels to link authors explicitly to addresses:
+%% \author[label1,label2]{}
+%% \address[label1]{}
+%% \address[label2]{}
+
+%% PACS codes here, in the form: \PACS code \sep code
+
+%% MSC codes here, in the form: \MSC code \sep code
+%% or \MSC[2008] code \sep code (2000 is the default)
+
+\end{document}
